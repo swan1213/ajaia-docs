@@ -1,0 +1,11 @@
+node_modules/
+frontend/dist/
+backend/static/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.db
+.venv/
+.env
+.DS_Store
+e2e/screenshots/

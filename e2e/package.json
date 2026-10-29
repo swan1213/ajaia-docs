@@ -1,0 +1,10 @@
+{
+  "name": "ajaia-docs-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node ui-flow.mjs ./screenshots" },
+  "dependencies": {
+    "@sparticuz/chromium": "^153.0.0",
+    "puppeteer-core": "^25.16.0"
+  }
+}
