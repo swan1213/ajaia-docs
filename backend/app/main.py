@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import ProgrammingError
 
 from . import models  # noqa: F401  (registers tables)
 from .db import Base, SessionLocal, engine
@@ -19,7 +20,11 @@ STATIC_DIR = Path(os.getenv("STATIC_DIR", Path(__file__).resolve().parent.parent
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(engine)
+    try:
+        Base.metadata.create_all(engine)
+    except ProgrammingError:
+        # Another serverless instance created the tables at the same moment.
+        pass
     if os.getenv("SEED_DEMO", "1") == "1":
         with SessionLocal() as db:
             seed(db)

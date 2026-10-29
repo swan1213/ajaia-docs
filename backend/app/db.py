@@ -1,12 +1,24 @@
+import logging
 import os
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
+log = logging.getLogger(__name__)
+
 
 def _database_url() -> str:
-    url = os.getenv("DATABASE_URL", "sqlite:///./ajaia_docs.db")
-    # Render / Heroku style urls use postgres:// which SQLAlchemy doesn't accept.
+    # DATABASE_URL wins. POSTGRES_URL is what Vercel's Postgres (Neon) integration injects.
+    url = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
+    if not url:
+        if os.getenv("VERCEL"):
+            # Vercel functions only have a writable /tmp, and it's wiped between
+            # instances. Boot anyway so the app works, but data won't stick around.
+            log.warning("No DATABASE_URL set on Vercel, using throwaway SQLite in /tmp")
+            url = "sqlite:////tmp/ajaia_docs.db"
+        else:
+            url = "sqlite:///./ajaia_docs.db"
+    # Render / Heroku / Neon style urls use postgres:// which SQLAlchemy doesn't accept.
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+psycopg://", 1)
     elif url.startswith("postgresql://"):

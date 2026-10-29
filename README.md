@@ -101,9 +101,38 @@ npm test        # or: CHROME_PATH=/path/to/chrome npm test
 
 It logs in as Alice, Bob and Carol in separate browser contexts and checks formatting survives a reload, rename, sharing, live update between users, the conflict banner, read only for viewers, upload and the bad upload error. It writes screenshots to `e2e/screenshots/`.
 
-## Deploying (Render, free)
+## Deploying
 
-The repo has a `render.yaml` blueprint that creates a free Docker web service and a free Postgres.
+### Vercel (one project, two services)
+
+`vercel.json` deploys the repo as one Vercel project with two services on one domain:
+
+| Service | Folder | Public path | What it is |
+|---|---|---|---|
+| `backend` | `backend/` | `/api/*` | FastAPI, runs as a Vercel Function |
+| `frontend` | `frontend/` | everything else | Vite build of the React app, served from the CDN |
+
+The browser only ever calls same-origin `/api/...`, so there are no service bindings and no CORS. Vercel passes the full path through, so `/api/docs/5` reaches FastAPI as `/api/docs/5`, which is what the routes already expect.
+
+Steps:
+
+1. Push the repo to GitHub
+2. In Vercel: Add New > Project > import the repo, leave the root directory as the repo root
+3. **Add a database before the first deploy.** Vercel functions can't keep a SQLite file. In the project, go to Storage > Create / Connect > Neon (free) and connect it to all environments. That injects `DATABASE_URL` / `POSTGRES_URL`, and the app picks either up.
+4. Deploy. Tables and demo users get created on the first request.
+
+If you skip step 3 the app still boots but falls back to SQLite in `/tmp`, so data disappears whenever Vercel spins up a new instance.
+
+Run both services locally the same way Vercel does:
+
+```bash
+npm i -g vercel
+vercel dev -L        # http://localhost:3000, set DATABASE_URL to use Postgres
+```
+
+### Render (Docker, free)
+
+The repo also has a `render.yaml` blueprint that creates a free Docker web service and a free Postgres.
 
 1. Push this folder to a GitHub repo
 2. In Render: New > Blueprint > pick the repo > Apply
@@ -111,11 +140,11 @@ The repo has a `render.yaml` blueprint that creates a free Docker web service an
 
 Heads up: free Render services sleep after ~15 min idle, so the first load can take 30 to 60 seconds.
 
-Env vars:
+### Env vars
 
 | Var | Default | What it does |
 |---|---|---|
-| `DATABASE_URL` | `sqlite:///./ajaia_docs.db` | Any SQLAlchemy URL. `postgres://` urls are handled |
+| `DATABASE_URL` | `sqlite:///./ajaia_docs.db` (or `/tmp` on Vercel) | Any SQLAlchemy URL. `postgres://` urls are handled. `POSTGRES_URL` works too |
 | `SEED_DEMO` | `1` | Seed demo users + welcome doc if the DB is empty |
 | `STATIC_DIR` | `backend/static` | Where the built frontend lives |
 

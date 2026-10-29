@@ -20,6 +20,7 @@ I treated it like a fast pair who types for me, and I kept the decisions. Roughl
 - Writing a lot of tests fast, including the annoying ones like building a minimal `.docx` zip by hand inside a test so docx import is tested without a fixture file.
 - Setting up a headless browser in a locked down sandbox (the normal Playwright download was blocked, so it found a Chromium build that ships inside an npm package).
 - Spinning up a throwaway Postgres to run the same test suite against it, so I know the deploy DB actually works and not just SQLite.
+- Reading the Vercel Services docs and turning them into a working `vercel.json`, plus catching the serverless gotchas (no writable disk for SQLite, cold starts racing to create tables and seed data).
 
 ## What I changed or rejected
 
@@ -37,5 +38,5 @@ I treated it like a fast pair who types for me, and I kept the decisions. Roughl
 - **21 backend tests** (pytest), run on both SQLite and Postgres. Most are about access control since that's where a bug matters most.
 - **End to end browser test** (`e2e/ui-flow.mjs`) with three users in separate browser sessions: formatting survives reload, rename sticks, sharing shows up under "Shared with me", Bob's edit appears in Alice's open tab, conflict banner shows and resolves, Carol can't edit, upload works, bad upload shows a clear error, and it fails if there's any unexpected console error.
 - **Screenshots** from that run (in `docs/screenshots/`) that I went through by eye, including a phone sized one.
-- Simulated the Docker build steps locally (clean `npm ci`, build, run with a `postgres://` URL and `$PORT`) since there was no Docker daemon in the sandbox.
+- Ran both services together with `vercel dev` and pointed the same browser test at Vercel's local router, so the routing in `vercel.json` is actually tested, not just written. That run caught a real issue: my first SPA fallback rewrite was also catching Vite's JS module requests and returning HTML for them. Scoped it to the real app routes.
 - Then clicked through the deployed app myself.

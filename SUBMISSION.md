@@ -17,7 +17,8 @@
 | `frontend/` | React + TipTap app (Vite) |
 | `e2e/` | Headless Chrome test that runs the full multi user flow |
 | `docs/screenshots/` | Screenshots of each main flow from the e2e run |
-| `Dockerfile`, `render.yaml` | Container build and Render deploy blueprint |
+| `vercel.json` | Vercel deploy config (frontend + backend services) |
+| `Dockerfile`, `render.yaml` | Alternate deploy: container build and Render blueprint |
 
 ## Status
 

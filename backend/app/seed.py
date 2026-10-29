@@ -1,6 +1,7 @@
 """Seed demo users and one shared doc so reviewers can test sharing right away."""
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DbSession
 
 from .models import Document, Share, User
@@ -34,7 +35,15 @@ WELCOME_HTML = """
 def seed(db: DbSession) -> None:
     if db.scalar(select(User).limit(1)) is not None:
         return  # already seeded, never clobber real data
+    try:
+        _insert_demo_data(db)
+    except IntegrityError:
+        # On serverless, two cold starts can try to seed at the same moment.
+        # Whoever loses just backs off, the data is already there.
+        db.rollback()
 
+
+def _insert_demo_data(db: DbSession) -> None:
     users = {}
     for email, name in DEMO_USERS:
         u = User(email=email, name=name, password_hash=hash_password(DEMO_PASSWORD))

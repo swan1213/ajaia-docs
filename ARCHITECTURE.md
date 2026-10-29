@@ -2,7 +2,7 @@
 
 ## The short version
 
-React + TipTap on the front, FastAPI + SQLAlchemy on the back, Postgres in prod (SQLite locally). One Docker container serves both the API and the built frontend, deployed on Render's free tier.
+React + TipTap on the front, FastAPI + SQLAlchemy on the back, Postgres in prod (SQLite locally). Deployed on Vercel as one project with two services on one domain: the React app served from the CDN, and FastAPI running as a Vercel Function under `/api`.
 
 ```
 Browser (React, TipTap)
@@ -34,7 +34,7 @@ With ~4 hours I went for "the core loop is solid" over "lots of features". The t
 
 **Two upload flows, same converter.** "Upload a file" on the dashboard creates a new doc. "Insert file" in the editor converts and inserts at the cursor without creating anything. Both go through `file_to_html` which checks extension, size (2 MB) and empty files, and gives a readable error for corrupt docx.
 
-**One container.** FastAPI serves the built React app with an SPA fallback (so refreshing `/docs/12` works). One service to deploy, no CORS setup, and Render's blueprint wires in Postgres automatically.
+**One Vercel project, two services, one domain.** `vercel.json` sends `/api/*` to the FastAPI service and everything else to the frontend. Since the browser only calls same-origin `/api/...`, there's no CORS setup and no service-to-service calls, so no bindings needed. The frontend has rewrites for `/login` and `/docs/:id` so refreshing a deep link works. Postgres comes from Neon through Vercel's storage integration. Since serverless instances can cold start at the same time, table creation and seeding are written to tolerate racing each other. There's also a `Dockerfile` + `render.yaml` as a backup deploy path where FastAPI serves the built frontend from one container.
 
 ## What I cut on purpose
 
@@ -51,7 +51,8 @@ With ~4 hours I went for "the core loop is solid" over "lots of features". The t
 - "Keep mine" in a conflict overwrites the other person's version. There's no merge.
 - Polling means another person's edit shows up within ~4 seconds, not instantly.
 - Sessions never expire.
-- Free Render tier sleeps when idle, so the first request after a while is slow.
+- The backend is a serverless function, so the first request after a quiet period has a cold start of a second or two.
+- Polling every 4 seconds costs function invocations. Fine at this scale, websockets would replace it anyway.
 - The JS bundle is ~680 KB (TipTap + React). Could code split, didn't matter at this scope.
 
 ## What I'd build next with another 2-4 hours
